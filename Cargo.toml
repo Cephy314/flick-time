@@ -3,6 +3,10 @@ name = "flick-time"
 version = "0.1.0"
 edition = "2024"
 authors = ["Victoria B. Sagady"]
+license = "MIT or Apache-2.0"
+keywords = ["media","time","fps","samples","fixed-point"]
+categories = ["data-structures","date-and-time","game-development","multimedia"]
+publish = false
 
 [dependencies]
 
