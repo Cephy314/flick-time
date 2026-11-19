@@ -3,8 +3,10 @@
 //! Units of time in a Flick represent `1/705_600_000`th of a second.
 //! which allows common Hz rates used in media such as 24 or 60 frames per second.
 //! Additionally this can support NTSC broadcast frame rates and common audio sample rates.
+use core::fmt::Debug;
 use core::ops::Add;
 
+type Result<T> = core::result::Result<T, FlickError>;
 /// There are `705_600_000` flicks per second.
 pub const FLICKS_PER_SECOND: i64 = 705_600_000;
 
@@ -78,7 +80,64 @@ macro_rules! impl_flick_from {
 
 impl_flick_from!(u8, u16, u32, i8, i16, i32, i64);
 
-impl Flick {}
+impl Flick {
+    /// Calculate the number of flicks per second.
+    ///
+    /// Accepts a `numerator` and `denominator`.
+    ///
+    /// Returns Some(i64) flicks per second value or None if result is 0 or invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use flick_time::Flick;
+    ///
+    /// assert_eq!(Flick::calculate_ratio(24,1),Some(29_400_000));
+    /// assert_eq!(Flick::calculate_ratio(30_000,1001), Some(23_543_520));
+    /// assert_eq!(Flick::calculate_ratio(705_600_001,1), None);
+    /// ```
+    pub const fn calculate_ratio(num: i64, den: i64) -> Option<i64> {
+        if num == 0 || den == 0 {
+            return None;
+        }
+        let ratio: f64 = num as f64 / den as f64;
+        let flicks = (FLICKS_PER_SECOND as f64 / ratio) as i64;
+        if flicks == 0 || flicks == i64::MAX || flicks == i64::MIN {
+            return None;
+        }
+        Some(flicks)
+    }
+}
+
+/// Error types for [`Flick`] type.
+#[derive(Copy, Clone, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum FlickError {
+    /// An attempt to use a ratio with 0 as denominator or numerator.
+    #[non_exhaustive]
+    DivideByZero(i64, i64),
+    /// `[Flick]` ratio results must be not be zero.
+    #[non_exhaustive]
+    NoZeroValue(i64, i64),
+}
+
+impl Debug for FlickError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::DivideByZero(num, den) => {
+                write!(f, "No division by zero: {0} / {1}", num, den)
+            }
+            Self::NoZeroValue(num, den) => {
+                write!(
+                    f,
+                    "Ratios must result in non zero value: {0} / {1}",
+                    num, den
+                )
+            }
+        }
+    }
+}
+
 /// An iterator oveer [`Flick`]s,
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FlickIter(i64);
@@ -101,13 +160,13 @@ impl Iterator for FlickIter {
 /// Common rates (Hz) which divide cleanly into FLICKS.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Rate {
-    /// NTSC 24 Fps (24/1001)
+    /// NTSC 24 Fps (24000/1001)
     Hz23_98,
     /// 24 Fps
     Hz24,
     /// 25 Fps,
     Hz25,
-    /// NTSC 30 Fps (30/1001)
+    /// NTSC 30 Fps (30000/1001)
     Hz29_97,
     /// 30 Fps
     Hz30,
@@ -115,7 +174,7 @@ pub enum Rate {
     Hz48,
     /// 50 Fps
     Hz50,
-    /// NTSC 59.94 Fps (60/1001)
+    /// NTSC 59.94 Fps (600000/1001)
     Hz59_94,
     /// 60 Fps
     Hz60,
