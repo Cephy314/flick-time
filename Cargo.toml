@@ -1,5 +1,6 @@
 [package]
 name = "flick-time"
+description = "Fixed-point time type for media, simulation and games"
 version = "0.1.0"
 edition = "2024"
 authors = ["Victoria B. Sagady"]
