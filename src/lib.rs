@@ -1,5 +1,11 @@
+//! Fixed-point time representation.
+//!
+//! Units of time in a Flick represent `1/705_600_000`th of a second.
+//! which allows common Hz rates used in media such as 24 or 60 frames per second.
+//! Additionally this can support NTSC broadcast frame rates and common audio sample rates.
 use core::ops::Add;
 
+/// There are `705_600_000` flicks per second.
 pub const FLICKS_PER_SECOND: i64 = 705_600_000;
 
 /// Integral time representation divided into [`FLICKS_PER_SECOND`]
@@ -136,6 +142,7 @@ pub enum Rate {
 }
 
 impl Rate {
+    /// Retrieve the number of [`Flick`]s which represents the given Hz per second.
     pub const fn flicks_per_second(self) -> i64 {
         match self {
             Self::Hz23_98 => 29_429_400,
