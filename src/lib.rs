@@ -16,6 +16,7 @@ impl IntoIterator for Flick {
         FlickIter(self.0)
     }
 }
+
 impl Add<Flick> for Flick {
     type Output = Flick;
     fn add(self, rhs: Self) -> Flick {
@@ -55,6 +56,21 @@ macro_rules! impl_from_flick {
 }
 
 impl_from_flick!(u64, u128, usize, i64, i128, isize, f32, f64);
+
+macro_rules! impl_flick_from {
+
+    ($($ty:ty),* $(,)?) => {
+        $(
+        impl From<$ty> for Flick {
+            fn from(value: $ty) -> Self {
+                Self(value as _)
+            }
+        }
+        )*
+    };
+}
+
+impl_flick_from!(u8, u16, u32, i8, i16, i32, i64);
 
 impl Flick {}
 /// An iterator oveer [`Flick`]s,
