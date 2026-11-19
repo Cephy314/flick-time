@@ -12,31 +12,26 @@ The `Flick` was first proposed on FaceBook by Horvath and then refined with cont
 
 ## Common Conversions
 
-**Common Frame / Refresh Rates**
-
-| Hz/FPS |   Flicks |
-| --- | --- |
-| 23.976  | `29_429_400` |
-| 24 | `29_400_000` |
-| 29.97 | `23_543_520` |
-| 30 | `23_520_000` |
-| 48 | `14_700_000` |
-| 50 | `14_112_000` |
-| 59.94 | `11_771_760` |
-| 60 | `11_760_000` |
-| 90 | `7_840_000` |
-| 120 | `5_880_000` |
-| 144 | `4_900_000` |
-| 240 | `2_940_000` |
-
-
-**Common Audio Sample Rates**
-| Hz | Flicks |
-| --- | --- |
-| 44,100 | `16_000` |
-| 48,000 | `14_700` |
-| 88,200 | `8_000` |
-| 96,000 | `7_350` |
-| 192,000 | `3_675` |
-
+| Hz |   Flicks | Note |
+| --- | --- | --- |
+| 8 | `88_200_000` | Animation on 3's |
+| 12 | `58_800_000` | Animation on 2's |
+| 23.976  | `29_429_400` | NTSC 3:2 pulldown |
+| 24 | `29_400_000` | Film |
+| 25 | `28_224_000` | PAL Broadcast |
+| 29.97 | `23_543_520` | NTSC Broadcast 30p |
+| 30 | `23_520_000` | 30 Fps |
+| 48 | `14_700_000` | 2x Film |
+| 50 | `14_112_000` | 2x PAL Broadcast |
+| 59.94 | `11_771_760` | NTSC Broadcast 60p |
+| 60 | `11_760_000` | Standard Refresh Rate |
+| 90 | `7_840_000` | LED \ Monitor Refresh |
+| 120 | `5_880_000` | Monitor Refresh |
+| 144 | `4_900_000` | Monitor Refresh |
+| 240 | `2_940_000` | Monitor Refresh |
+| 44,100 | `16_000` | NTSC Audio |
+| 48,000 | `14_700` | CD Quality Audio |
+| 88,200 | `8_000` | NTSC High Quality Audio |
+| 96,000 | `7_350` | High Quakity Audio |
+| 192,000 | `3_675` | Audio Mastering |
 
