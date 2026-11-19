@@ -8,7 +8,7 @@ While this measurement of time may not fit most needs, it does fit extremely wel
 
 ## History
 
-The `Flick` was first proposed on FaceBook by Horvath and then refined with contributions by Kearsley Higgins, Francisco De La Torre, Benjy Feen, Eric Landreneau, and Sebastian Sylwan. The original repository can be found in the [Flicks](https://github.com/facebookarchive/Flicks) repository on GitHub.
+The `Flick` was first proposed on FaceBook by Horvath and then refined with contributions by Kearsley Higgins, Francisco De La Torre, Benjy Feen, Eric Landreneau, and Sebastian Sylwan. The original repository can be found in the archived [Flicks](https://github.com/facebookarchive/Flicks) repository on GitHub.
 
 ## Common Conversions
 
