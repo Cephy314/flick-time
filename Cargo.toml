@@ -10,4 +10,17 @@ publish = false
 
 [dependencies]
 
+[lints.rust]
+unsafe_code = { level = "forbid", priority = 0 }
+missing_docs = "deny"
+unused_crate_dependencies = "warn"
+unused_results = "deny"
+missing_debug_implementations = "deny"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+
 
