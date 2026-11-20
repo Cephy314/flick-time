@@ -95,11 +95,16 @@ impl Flicks {
     /// # Example
     ///
     /// ```
-    /// use flick_time::{Flicks,FlickError};
+    /// use flick_time::{Flicks};
     ///
-    /// assert_eq!(Flicks::per_cycle(24,1),Ok(Flicks::new(29_400_000)));
-    /// assert_eq!(Flicks::per_cycle(30_000,1001),Ok(Flicks::new(23_543_520)));
-    /// assert!(Flicks::per_cycle(705_600_001,1).is_err());
+    /// let fps_24 = Flicks::per_cycle(24,1).expect("Invalid ratio");
+    /// let fps_30_ntsc = Flicks::per_cycle(30_000,1001).expect("Invalid ratio");
+    /// let audio_192kHz = Flicks::per_cycle(192_000,1).expect("Overflow");
+    ///
+    /// assert_eq!(fps_24,Flicks::new(29_400_000));
+    /// assert_eq!(fps_30_ntsc,Flicks::new(23_543_520));
+    /// assert_eq!(audio_192kHz, Flicks::new(3_675));
+    /// assert!(Flicks::per_cycle(705_600_001,1).is_err()); // error due to remainder
     /// ```
     pub const fn per_cycle(num: i64, den: i64) -> Result<Flicks> {
         if num == 0 || den == 0 {
@@ -117,6 +122,41 @@ impl Flicks {
             return Err(FlickError::Overflow);
         };
         Ok(Flicks(flicks))
+    }
+
+    /// Returns whole seconds represented by [`Flicks`]
+    pub fn as_secs(&self) -> i64 {
+        self.0.div_euclid(FLICKS_PER_SECOND)
+    }
+
+    /// Returns whole milliseconds represented by [`Flicks`]
+    pub fn as_millis(&self) -> i64 {
+        self.0.div_euclid(FLICKS_PER_SECOND / 1000)
+    }
+
+    /// Returns whole microseconds represented by ['Flicks']
+    pub fn as_micros(&self) -> i128 {
+        (self.0 as i128 * 10).div_euclid(7056)
+    }
+
+    /// Returns whole nanoseconds represented by ['Flicks']
+    pub fn as_nanos(&self) -> i128 {
+        (self.0 as i128 * 10_000).div_euclid(7056)
+    }
+
+    /// Return subsecond nanos
+    pub fn as_subsec_nanos(&self) -> i128 {
+        let remainder = self.0 % FLICKS_PER_SECOND;
+        (remainder as i128 * 10_000).div_euclid(7056)
+    }
+
+    /// Create [`Flicks`] from given seconds.
+    pub const fn from_secs(secs: i64) -> Option<Flicks> {
+        let Some(flicks) = secs.checked_mul(FLICKS_PER_SECOND) else {
+            return None;
+        };
+
+        Some(Flicks(flicks))
     }
 }
 
@@ -180,7 +220,7 @@ impl Iterator for FlickIter {
     }
 }
 
-/// Common rates (Hz) which divide cleanly into FLICKS.
+/// Helper enum for common frame rates, sample rates, refresh rates.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FlicksPerCycle {
     /// NTSC 24 Fps (24000/1001)
@@ -225,7 +265,7 @@ pub enum FlicksPerCycle {
 
 impl FlicksPerCycle {
     /// Retrieve the number of [`Flick`]s which represents the given Hz per second.
-    pub const fn flicks_per_second(self) -> Flicks {
+    pub const fn flicks(self) -> Flicks {
         match self {
             Self::Hz23_98 => Flicks(29_429_400),
             Self::Hz24 => Flicks(29_400_000),
