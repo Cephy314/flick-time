@@ -14,9 +14,9 @@ pub const FLICKS_PER_SECOND: i64 = 705_600_000;
 ///
 /// Represents +/- 414 years.
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Flick(i64);
+pub struct Flicks(i64);
 
-impl IntoIterator for Flick {
+impl IntoIterator for Flicks {
     type IntoIter = FlickIter;
     type Item = i64;
 
@@ -25,20 +25,20 @@ impl IntoIterator for Flick {
     }
 }
 
-impl Add<Flick> for Flick {
-    type Output = Flick;
-    fn add(self, rhs: Self) -> Flick {
-        Flick(self.0.saturating_add(rhs.0))
+impl Add<Flicks> for Flicks {
+    type Output = Flicks;
+    fn add(self, rhs: Self) -> Flicks {
+        Flicks(self.0.saturating_add(rhs.0))
     }
 }
 
-impl AsRef<i64> for Flick {
+impl AsRef<i64> for Flicks {
     fn as_ref(&self) -> &i64 {
         &self.0
     }
 }
 
-impl AsMut<i64> for Flick {
+impl AsMut<i64> for Flicks {
     fn as_mut(&mut self) -> &mut i64 {
         &mut self.0
     }
@@ -48,15 +48,15 @@ macro_rules! impl_from_flick {
 
     ($($ty:ty),* $(,)?) => {
         $(
-        impl From<Flick> for $ty {
-            fn from(flick: Flick) -> Self {
-                flick.0 as _
+        impl From<Flicks> for $ty {
+            fn from(flicks: Flicks) -> Self {
+                flicks.0 as _
             }
         }
 
-        impl From<&Flick> for $ty {
-            fn from(flick: &Flick) -> Self {
-                flick.0 as _
+        impl From<&Flicks> for $ty {
+            fn from(flicks: &Flicks) -> Self {
+                flicks.0 as _
             }
         }
         )*
@@ -69,7 +69,7 @@ macro_rules! impl_flick_from {
 
     ($($ty:ty),* $(,)?) => {
         $(
-        impl From<$ty> for Flick {
+        impl From<$ty> for Flicks {
             fn from(value: $ty) -> Self {
                 Self(value as _)
             }
@@ -80,7 +80,12 @@ macro_rules! impl_flick_from {
 
 impl_flick_from!(u8, u16, u32, i8, i16, i32, i64);
 
-impl Flick {
+impl Flicks {
+    /// Create new [`Flicks`] with given i64
+    pub const fn new(value: i64) -> Self {
+        Flicks(value)
+    }
+
     /// Calculate the number of flicks per second.
     ///
     /// Accepts a `numerator` and `denominator`.
@@ -90,22 +95,28 @@ impl Flick {
     /// # Example
     ///
     /// ```
-    /// use flick_time::Flick;
+    /// use flick_time::{Flicks,FlickError};
     ///
-    /// assert_eq!(Flick::calculate_ratio(24,1),Some(29_400_000));
-    /// assert_eq!(Flick::calculate_ratio(30_000,1001), Some(23_543_520));
-    /// assert_eq!(Flick::calculate_ratio(705_600_001,1), None);
+    /// assert_eq!(Flicks::per_cycle(24,1),Ok(Flicks::new(29_400_000)));
+    /// assert_eq!(Flicks::per_cycle(30_000,1001),Ok(Flicks::new(23_543_520)));
+    /// assert!(Flicks::per_cycle(705_600_001,1).is_err());
     /// ```
-    pub const fn calculate_ratio(num: i64, den: i64) -> Option<i64> {
+    pub const fn per_cycle(num: i64, den: i64) -> Result<Flicks> {
         if num == 0 || den == 0 {
-            return None;
+            return Err(FlickError::DivideByZero(num, den));
         }
-        let ratio: f64 = num as f64 / den as f64;
-        let flicks = (FLICKS_PER_SECOND as f64 / ratio) as i64;
-        if flicks == 0 || flicks == i64::MAX || flicks == i64::MIN {
-            return None;
+
+        if FLICKS_PER_SECOND * den % num > 0 {
+            return Err(FlickError::Remainder(num, den));
         }
-        Some(flicks)
+        let Some(top) = FLICKS_PER_SECOND.checked_mul(den) else {
+            return Err(FlickError::Overflow);
+        };
+
+        let Some(flicks) = top.checked_div(num) else {
+            return Err(FlickError::Overflow);
+        };
+        Ok(Flicks(flicks))
     }
 }
 
@@ -116,9 +127,15 @@ pub enum FlickError {
     /// An attempt to use a ratio with 0 as denominator or numerator.
     #[non_exhaustive]
     DivideByZero(i64, i64),
-    /// `[Flick]` ratio results must be not be zero.
+    /// Does not divide evenly into flicks.
     #[non_exhaustive]
-    NoZeroValue(i64, i64),
+    Remainder(i64, i64),
+    /// Ratios must be greater than zero.
+    #[non_exhaustive]
+    InvalidRatio,
+    /// Overflow occurred on operation
+    #[non_exhaustive]
+    Overflow,
 }
 
 impl Debug for FlickError {
@@ -127,12 +144,18 @@ impl Debug for FlickError {
             Self::DivideByZero(num, den) => {
                 write!(f, "No division by zero: {0} / {1}", num, den)
             }
-            Self::NoZeroValue(num, den) => {
+            Self::Remainder(num, den) => {
                 write!(
                     f,
-                    "Ratios must result in non zero value: {0} / {1}",
+                    "Does not divide cleaning into flicks (705_600_000): {0} / {1}",
                     num, den
                 )
+            }
+            Self::InvalidRatio => {
+                write!(f, "Ratio is invalid, must be greater than zero.")
+            }
+            Self::Overflow => {
+                write!(f, "Operation overflowed.")
             }
         }
     }
@@ -159,7 +182,7 @@ impl Iterator for FlickIter {
 
 /// Common rates (Hz) which divide cleanly into FLICKS.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum Rate {
+pub enum FlicksPerCycle {
     /// NTSC 24 Fps (24000/1001)
     Hz23_98,
     /// 24 Fps
@@ -200,29 +223,29 @@ pub enum Rate {
     Hz192_000,
 }
 
-impl Rate {
+impl FlicksPerCycle {
     /// Retrieve the number of [`Flick`]s which represents the given Hz per second.
-    pub const fn flicks_per_second(self) -> i64 {
+    pub const fn flicks_per_second(self) -> Flicks {
         match self {
-            Self::Hz23_98 => 29_429_400,
-            Self::Hz24 => 29_400_000,
-            Self::Hz25 => 28_224_000,
-            Self::Hz29_97 => 23_543_520,
-            Self::Hz30 => 23_520_000,
-            Self::Hz48 => 14_700_000,
-            Self::Hz50 => 14_122_000,
-            Self::Hz59_94 => 11_771_760,
-            Self::Hz60 => 11_760_000,
-            Self::Hz90 => 7_840_000,
-            Self::Hz120 => 5_880_000,
-            Self::Hz144 => 4_900_000,
-            Self::Hz240 => 2_940_000,
-            Self::Hz44_100 => 16_000,
-            Self::Hz48_000 => 14_700,
-            Self::Hz88_200 => 8_000,
-            Self::Hz96_000 => 7_350,
-            Self::Hz176_400 => 4_000,
-            Self::Hz192_000 => 3_675,
+            Self::Hz23_98 => Flicks(29_429_400),
+            Self::Hz24 => Flicks(29_400_000),
+            Self::Hz25 => Flicks(28_224_000),
+            Self::Hz29_97 => Flicks(23_543_520),
+            Self::Hz30 => Flicks(23_520_000),
+            Self::Hz48 => Flicks(14_700_000),
+            Self::Hz50 => Flicks(14_122_000),
+            Self::Hz59_94 => Flicks(11_771_760),
+            Self::Hz60 => Flicks(11_760_000),
+            Self::Hz90 => Flicks(7_840_000),
+            Self::Hz120 => Flicks(5_880_000),
+            Self::Hz144 => Flicks(4_900_000),
+            Self::Hz240 => Flicks(2_940_000),
+            Self::Hz44_100 => Flicks(16_000),
+            Self::Hz48_000 => Flicks(14_700),
+            Self::Hz88_200 => Flicks(8_000),
+            Self::Hz96_000 => Flicks(7_350),
+            Self::Hz176_400 => Flicks(4_000),
+            Self::Hz192_000 => Flicks(3_675),
         }
     }
 }
